@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Çaj</title>
+<style>
+:root{--bg:#f6efe4;--ink:#4a2c1a;--soft:#8a6a52;--btn:#b3261e;--btnt:#fff;--saucer1:#fffdf8;--saucer2:#e8dcc8;--glass:#ffffff55;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d140e;--ink:#f1e2cf;--soft:#b49a82;--btn:#d9534a;--saucer1:#6b5a4a;--saucer2:#3a2e24;--glass:#ffffff22}}
+:root[data-theme="dark"]{--bg:#1d140e;--ink:#f1e2cf;--soft:#b49a82;--btn:#d9534a;--saucer1:#6b5a4a;--saucer2:#3a2e24;--glass:#ffffff22}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:Georgia,'Times New Roman',serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;overflow:hidden;touch-action:none;user-select:none}
+h1{margin:0;font-weight:400;font-size:2rem;letter-spacing:.08em}
+#msg{min-height:1.4em;color:var(--soft);font-style:italic;text-align:center;padding:0 16px}
+svg{width:min(88vw,62vh,440px);height:auto;cursor:grab}
+svg:active{cursor:grabbing}
+.row{display:flex;gap:10px;align-items:center}
+button{font:inherit;background:var(--btn);color:var(--btnt);border:0;border-radius:999px;padding:10px 20px;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--soft)}
+button:disabled{opacity:.4;cursor:default}
+#bar{width:min(70vw,260px);height:6px;border-radius:3px;background:var(--saucer2);overflow:hidden}
+#fill{height:100%;width:0;background:var(--btn);transition:width .2s}
+</style>
+</head>
+<body>
+<h1>Çaj</h1>
+<svg id="s" viewBox="-200 -200 400 400">
+  <defs>
+    <radialGradient id="sg"><stop offset="60%" stop-color="var(--saucer1)"/><stop offset="100%" stop-color="var(--saucer2)"/></radialGradient>
+    <radialGradient id="tea"><stop offset="0%" stop-color="#c2451c"/><stop offset="70%" stop-color="#9a2a0e"/><stop offset="100%" stop-color="#5e1707"/></radialGradient>
+    <linearGradient id="sp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2f2f2"/><stop offset="1" stop-color="#9a9a9a"/></linearGradient>
+    <clipPath id="c"><circle r="104"/></clipPath>
+  </defs>
+  <circle r="192" fill="url(#sg)" stroke="var(--saucer2)" stroke-width="2"/>
+  <circle r="150" fill="none" stroke="var(--saucer2)" stroke-width="1.5"/>
+  <circle r="122" fill="#00000018"/>
+  <circle r="118" fill="var(--glass)" stroke="#ffffffaa" stroke-width="3"/>
+  <circle r="104" fill="url(#tea)"/>
+  <g clip-path="url(#c)">
+    <g id="swirl" fill="none" stroke="#ffb27a" stroke-linecap="round" opacity="0">
+      <path d="M0 -30 A30 30 0 0 1 30 0" stroke-width="3"/>
+      <path d="M0 -60 A60 60 0 0 1 60 0" stroke-width="3"/>
+      <path d="M-70 0 A70 70 0 0 1 0 -70" stroke-width="3"/>
+      <path d="M0 85 A85 85 0 0 1 -85 0" stroke-width="3"/>
+      <path d="M95 0 A95 95 0 0 1 0 95" stroke-width="3"/>
+    </g>
+    <g id="cubes"></g>
+  </g>
+  <ellipse cx="-40" cy="-60" rx="40" ry="16" fill="#fff" opacity=".12" transform="rotate(-30 -40 -60)"/>
+  <g id="spoon">
+    <rect x="12" y="-3" width="230" height="6" rx="3" fill="url(#sp)"/>
+    <ellipse rx="17" ry="12" fill="url(#sp)" stroke="#777" stroke-width=".8"/>
+    <ellipse rx="11" ry="7" fill="#d5d5d5"/>
+  </g>
+</svg>
+<div id="bar"><div id="fill"></div></div>
+<div id="msg">Shto sheqer dhe përziej me lugë</div>
+<div class="row">
+  <button id="add">+ Sheqer</button>
+  <button id="reset" class="ghost">Çaj i ri</button>
+</div>
+<script>
+(function(){
+var svg=document.getElementById('s'),spoon=document.getElementById('spoon'),swirl=document.getElementById('swirl'),cubesG=document.getElementById('cubes'),msg=document.getElementById('msg'),fill=document.getElementById('fill'),addB=document.getElementById('add');
+var NS='http://www.w3.org/2000/svg';
+var pos={x:60,y:10},prevA=null,drag=false,vel=0,swA=0,cubes=[],added=0,stirred=0,clinkAcc=0,ac=null,MAX=4;
+function place(){spoon.setAttribute('transform','translate('+pos.x+' '+pos.y+') rotate(-40)')}
+function pt(e){var m=svg.getScreenCTM().inverse(),p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(m)}
+function clink(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();var o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=2600+Math.random()*500;g.gain.setValueAtTime(.06,ac.currentTime);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+.18);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.2)}catch(e){}}
+svg.addEventListener('pointerdown',function(e){drag=true;svg.setPointerCapture(e.pointerId);move(e)});
+svg.addEventListener('pointermove',function(e){if(drag)move(e)});
+['pointerup','pointercancel'].forEach(function(n){svg.addEventListener(n,function(){drag=false;prevA=null})});
+function move(e){
+  var p=pt(e),r=Math.hypot(p.x,p.y),max=78;
+  if(r>max){p.x*=max/r;p.y*=max/r;r=max}
+  pos.x=p.x;pos.y=p.y;place();
+  if(r<18){prevA=null;return}
+  var a=Math.atan2(p.y,p.x);
+  if(prevA!==null){
+    var d=a-prevA;if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;
+    var ad=Math.abs(d);
+    vel=Math.min(vel+d*(r/60)*1.5,0.5);vel=Math.max(vel,-0.5);
+    stirred+=ad;clinkAcc+=ad;
+    if(clinkAcc>Math.PI*1.4){clinkAcc=0;clink()}
+    dissolve(ad*r/1200);
+  }
+  prevA=a;
+}
+function dissolve(k){
+  cubes.forEach(function(c){c.s=Math.max(0,c.s-k);c.el.setAttribute('opacity',c.s);c.el.setAttribute('transform','translate('+c.x+' '+c.y+') rotate('+c.r+') scale('+(0.4+0.6*c.s)+')')});
+  update();
+}
+function update(){
+  var tot=added,left=cubes.reduce(function(a,c){return a+c.s},0);
+  var pct=tot?(tot-left)/tot:0;
+  fill.style.width=(pct*100)+'%';
+  if(!tot)msg.textContent='Shto sheqer dhe përziej me lugë';
+  else if(left>0.02)msg.textContent=stirred<1?'Tani përziej rreth e rrotull…':'Përziej, sheqeri po treten…';
+  else msg.textContent='Gati! Pi çajin ta ngrohtë ☕';
+  addB.disabled=added>=MAX;
+}
+addB.onclick=function(){
+  if(added>=MAX)return;
+  var a=Math.random()*Math.PI*2,r=30+Math.random()*50,g=document.createElementNS(NS,'g'),rc=document.createElementNS(NS,'rect');
+  rc.setAttribute('x',-9);rc.setAttribute('y',-9);rc.setAttribute('width',18);rc.setAttribute('height',18);rc.setAttribute('rx',3);rc.setAttribute('fill','#fff');rc.setAttribute('stroke','#d8d0c4');
+  g.appendChild(rc);cubesG.appendChild(g);
+  var c={x:Math.cos(a)*r,y:Math.sin(a)*r,r:Math.random()*60-30,s:1,el:g};
+  g.setAttribute('transform','translate('+c.x+' '+c.y+') rotate('+c.r+')');
+  cubes.push(c);added++;clink();update();
+};
+document.getElementById('reset').onclick=function(){cubesG.innerHTML='';cubes=[];added=0;stirred=0;vel=0;update()};
+function loop(){
+  swA+=vel*57;vel*=0.975;
+  swirl.setAttribute('transform','rotate('+swA+')');
+  swirl.setAttribute('opacity',Math.min(.85,Math.abs(vel)*4));
+  cubes.forEach(function(c){if(Math.abs(vel)>0.01){var a=Math.atan2(c.y,c.x)+vel*0.5,r=Math.hypot(c.x,c.y);c.x=Math.cos(a)*r;c.y=Math.sin(a)*r;c.r+=vel*30;c.el.setAttribute('transform','translate('+c.x+' '+c.y+') rotate('+c.r+') scale('+(0.4+0.6*c.s)+')')}});
+  requestAnimationFrame(loop);
+}
+place();update();loop();
+})();
+</script>
+</body>
+</html>
